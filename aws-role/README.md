@@ -15,3 +15,5 @@ fi
 
 To run on console:
 
+![aws-role](aws-role.png)
+
