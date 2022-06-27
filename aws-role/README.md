@@ -7,7 +7,7 @@ To use it in writing other scripts:
 #!/bin/bash
 
 aws-role >/dev/null
-if [ "${?}" != 0 ]
+if [ "${?}" -eq 0 ]
 then
     exit 1
 fi
