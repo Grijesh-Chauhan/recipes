@@ -1,0 +1,62 @@
+#!/bin/bash
+
+FILE="${HOME}/.aws/credentials"
+
+Red='\033[0;31m'
+Cyan='\033[0;36m'
+NC='\033[0m' # No Color
+BYellow='\033[1;33m'
+IGreen='\033[0;92m'
+
+echo_cyan() {
+    printf "${Cyan}${@}${NC}"
+}
+
+echo_red() {
+    printf "${Red}${@}${NC}"
+}
+
+echo_yellow() {
+    printf "${BYellow}${@}${NC}"
+}
+
+echo_green() {
+    printf "${IGreen}${@}${NC}"
+}
+
+function print_message() {
+    read AWS_ROLE
+    read EXPIRY_TIME
+    HREADABLE_TIME="$(date -j -f '%Y-%m-%dT%H:%M:%S' ${EXPIRY_TIME} '+%d-%b-%Y at %0l:%M %p' 2>/dev/null)"
+    EXPIRY_SECONDS="$(date -j -f '%Y-%m-%dT%H:%M:%S' ${EXPIRY_TIME} '+%s' 2>/dev/null)"
+    CURRENT_SECONDS="$(date '+%s')" 
+    REMAINING_MINUTES=$(((EXPIRY_SECONDS - CURRENT_SECONDS) / 60))
+    if [[ REMAINING_MINUTES -le 0 ]]
+    then
+        echo "AWS role $(echo_cyan $AWS_ROLE) is $(echo_red expired)" >&2
+        exit 1
+    elif [[ REMAINING_MINUTES -le 20 ]]
+    then
+        printf "$(echo_cyan $AWS_ROLE) will expire on ${HREADABLE_TIME} after $(echo_yellow ${REMAINING_MINUTES} minutes)"
+    elif [[ REMAINING_MINUTES -le 60 ]]
+    then
+        printf "$(echo_cyan $AWS_ROLE) will expire on ${HREADABLE_TIME} after $(echo_green ${REMAINING_MINUTES} minutes)"
+    else
+        HOURS=$((REMAINING_MINUTES / 60))
+        MINUTES=$((REMAINING_MINUTES - (HOURS * 60)))
+        printf "$(echo_cyan $AWS_ROLE) will expire on ${HREADABLE_TIME} after $(echo_green ${HOURS} hours and ${MINUTES} minutes)"
+    fi
+    printf "\n"
+}
+
+awk '
+BEGIN {
+    FS = "/"
+}
+/arn/ {
+    print $2
+    FS = " "
+}
+/expires/ {
+    print $NF
+}' "${FILE}" | print_message
