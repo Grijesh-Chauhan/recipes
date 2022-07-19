@@ -1,0 +1,67 @@
+#!/usr/bin/python3
+
+"""
+/usr/bin/python3 
+"""
+
+import sys, json, os
+from pygments import highlight, lexers, formatters
+
+def usage():
+    colorjson = os.path.basename(sys.argv[0])
+    print('''usage: print prettified colored JSON on console
+    
+    usecases:
+    1) Print colored and prettified JSON from a file on to standard output:
+
+        $ echo '{{ "a": {{ "b": [], "c": 1 }}, "e": "json" }}' > data.json    
+        $ {colorjson} data.json
+        {{
+            \033[94m"a"\033[0m: {{
+                \033[94m"b"\033[0m: [],
+                \033[94m"c"\033[0m: \033[34m1\033[0m
+            }},
+            \033[94m"e"\033[0m: \033[33m"json"\033[0m
+        }}
+    
+    2) Redirect ouptut JSON of first command's JSON into colorjson: 
+
+        $ JSONTricks='{{ "PrettifyOnly": "python3 -m json.tool",  "ColoredPrettify": "colorjson", "ToSingleLine": "awk -v RS= '{{\$1=\$1}}1'" }}'
+        $ echo $JSONTricks | colorjson
+        {{
+            \033[94m"ColoredPrettify"\033[0m: \033[33m"colorjson"\033[0m,
+            \033[94m"PrettifyOnly"\033[0m: \033[33m"python3 -m json.tool"\033[0m,
+            \033[94m"ToSingleLine"\033[0m: \033[33m"awk -v RS= {{$1=$1}}1"\033[0m
+        }}
+
+    3) help message:
+        
+        $ {colorjson} -h
+        $ {colorjson} --help
+
+note: {colorjson} does NOT accept JSON directly
+
+        $ {colorjson} '{{ "first_name": "Grijesh", "middle_name": "", "last_name": "Chauhan" }}'
+    '''.format(colorjson=colorjson))
+
+def dump_colored(jsonfile):
+    indented_json = json.dumps(json.load(jsonfile), indent=4)
+    print(highlight(indented_json,
+                    lexers.JsonLexer(),
+                    formatters.TerminalFormatter()
+                    ))
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ('-h', '--help'):
+            usage()
+            sys.exit(0)
+        try:
+            with open(sys.argv[1]) as jsonfile:
+                dump_colored(jsonfile)
+        except IOError:
+            print(f"error: not a valid file or option, {sys.argv[1]}", file=sys.stderr)
+        except json.decoder.JSONDecodeError:
+            print(f"error: invalid JSON file, {sys.argv[1]}", file=sys.stderr)
+    else:
+        dump_colored(sys.stdin)
