@@ -1,8 +1,10 @@
 #!/bin/bash
 
+# TODO add -j, --json for JSON format output
+
 FILE="${HOME}/.aws/credentials"
 
-Red='\033[0;31m'
+Red='\033[0;91m'
 Cyan='\033[0;36m'
 NC='\033[0m' # No Color
 BYellow='\033[1;33m'
@@ -24,7 +26,7 @@ echo_green() {
     printf "${IGreen}${@}${NC}"
 }
 
-function print_message() {
+print_message() {
     read AWS_ROLE
     read EXPIRY_TIME
     HREADABLE_TIME="$(date -j -f '%Y-%m-%dT%H:%M:%S' ${EXPIRY_TIME} '+%d-%b-%Y at %0l:%M %p' 2>/dev/null)"
@@ -52,8 +54,18 @@ function print_message() {
 awk '
 BEGIN {
     FS = "/"
+    AWS_PROFILE = "'"[${AWS_PROFILE}]"'"
+    if (length(AWS_PROFILE) > 2)
+        SKIPLINE = 1
+}
+SKIPLINE == 1 {
+    if ($0 != AWS_PROFILE)
+        next
+    else
+        SKIPLINE = 0
 }
 /arn/ {
+    SKIP = 0
     print $2
     FS = " "
 }
